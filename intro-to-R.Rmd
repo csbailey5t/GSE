@@ -1,0 +1,254 @@
+---
+title: "intro-to-R"
+author: "Scott"
+date: "7/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Doing data analysis with R
+
+We're going to take a very pragmatic approach in our workshop today. Instead of thinking about R as a programming language we're trying to learn to code in, we're going to approach R as just a program that we can use to do some fundamental data analysis. In that line of thinking, instead of learning a lot of base R, we're going to start using the Tidyverse packages and approach right away. Briefly, Tidyverse is a set of opinionated packages with a coherent approach to how to work with data in R. For many of us, they make R easier to learn and to use.  
+
+```{r imports}
+library(tidyverse)
+```
+
+First, let's read in some data that might be interesting for education research. Here's a link to data on 2010 School Improvement Grants that I found on data.gov: https://catalog.data.gov/dataset/school-improvement-2010-grants. 
+
+```{r}
+data <- read_csv("https://inventory.data.gov/dataset/ce23c458-9c25-4bcc-a7bd-0490641dec8e/resource/9665a448-6f2f-4872-99b9-bf12b5af84f4/download/userssharedsdfschoolimprovement2010grants.csv")
+head(data)
+```
+
+Let's use the `glimpse` function from the tidyverse just to see what the variables are, how many rows there are, the type of each variable, and the first few values for each variable. 
+
+```{r}
+glimpse(data)
+```
+
+We should notice that all of the variables here are being listed as the `<chr>` or character type. Let's change a few of these. For some of the analysis that we'll want to do, we want to treat the award amount as a number. We also want to treat variables like City, State, and Model as factors, or categoricals, which are variables with a limited number of possible values.
+
+```{r}
+data$City <- as_factor(data$City)
+data$State <- as_factor(data$State)
+data$`Model Selected` <- as_factor(data$`Model Selected`)
+glimpse(data)
+```
+
+We can see that the three variables are now being treated as factors. Changing the type of the amout column is a bit more complicated. We need to remove the dollar sign, then we can change the value to a number. 
+
+```{r}
+data$`2010/11/Award Amount` <- as.numeric(gsub("\\$", "", data$`2010/11/Award Amount`))
+glimpse(data)
+```
+
+Now that we have the data in the right types, let's start getting a better sense of our data. First, we'll use the `summary` function and see what it gives us.
+
+```{r}
+summary(data)
+```
+
+We get some nice information here. We can see that R has actually counted the number of occurences of each city, state, and model, and seem to have provided the top most frequent of each of those. We'll definitely check that. For our one numeric variable, the award amount, we get some basic descriptive statistics, such as min, max, mean, and a quartile breakdown. We can also see that there are 74 rows where there are NA values. 
+
+Let's look a bit more at those factor variables. At the same, we'll learn about the pipe operator, `%>%`.
+
+```{r}
+data %>% 
+  count(City)
+```
+
+By looking at the number of rows, we can see now that there are 424 different cities that received grants. Let's order them to make sure we know which city received the most.
+
+```{r}
+data %>%
+  count(City) %>%
+  arrange(desc(n))
+```
+
+Let's do the same thing with states and the model.
+
+```{r}
+data %>%
+  count(State) %>%
+  arrange(desc(n))
+```
+
+```{r}
+data %>%
+  count(`Model Selected`) %>%
+  arrange(desc(n))
+```
+
+R gives us the information we're wanting here, but it also gives us a warning about having NA values that are simply missing. It could be better for us as we're working with our data to have an explicit value that we know stands for missing or otherwise NA values. 
+
+```{r}
+data$`Model Selected` <- fct_explicit_na(data$`Model Selected`, na_level = "Missing")
+levels(data$`Model Selected`)
+```
+
+Let's rerun our counting code for the model variable.
+
+```{r}
+data %>%
+  count(`Model Selected`) %>%
+  arrange(desc(n))
+```
+
+We're no longer getting any warning or suggestion since we've made the NA values explicit. What if we wanted to quickly graph how many grants were given for each model type? We'll use ggplot, which is the Tidyverse library for graphing that has become fairly standard in R.
+
+```{r}
+ggplot(data, aes(`Model Selected`)) +
+  geom_bar()
+```
+
+Visually representing this data increases the impact of the difference between model types. Many more schools went with the mildest type of change model than any other. We could do the same thing for the State variable. 
+
+```{r}
+ggplot(data, aes(State)) +
+  geom_bar()
+```
+
+We can see that it automatically ordered the levels by alphabetical order, which is great. But, the state abbreviations are crammed together, and it's hard to read them. Let's fix that by changing the orientation of the labels. 
+
+```{r}
+ggplot(data, aes(State)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = -90))
+```
+
+Now that we've gotten a bit of experience with categorical or factor variables, let's switch over and take a look at our one numeric variable, the award amount. 
+
+```{r}
+summary(data$`2010/11/Award Amount`)
+```
+
+Let's try to get a sense of the distribution of this data. Do more schools get smaller amounts of money? Do more schools get larger? We'll do this with a histogram visualization. 
+
+```{r}
+ggplot(data, aes(`2010/11/Award Amount`)) +
+  geom_histogram(bins = 50, na.rm = TRUE, fill = "white", color = "grey30")
+```
+
+We can see that generally, higher numbers of schools received smaller awards, though there are a couple of other peaks in the distribution. We also see that there are some strange low values that we might want to look into it. Before we do that, let's look at how our figure changes if we group not by a number of bins but by defining the width of each bin instead.
+
+```{r}
+ggplot(data, aes(`2010/11/Award Amount`)) +
+  geom_histogram(binwidth = 10000, na.rm = TRUE, fill = "white", color = "grey30")
+```
+
+Why don't we add a line to mark the mean so that we can see roughly how much of the distribution falls above or below. 
+
+```{r}
+ggplot(data, aes(`2010/11/Award Amount`)) +
+  geom_histogram(binwidth = 10000, na.rm = TRUE, fill = "white", color = "grey30") +
+  geom_vline(aes(xintercept=mean(data$`2010/11/Award Amount`, na.rm = TRUE)), color = "red")
+```
+
+We've developed a bit of a sense of how to explore our data, especially with plots. Let's start thinking about what types of questions we might ask our data and how we could find solutions with R. 
+
+What if we wonder whether there is some set of states that might have received more money on average than other states?
+
+```{r}
+state_award <- data %>%
+  group_by(State) %>%
+  summarise(mean_award = mean(`2010/11/Award Amount`)) %>%
+  arrange(desc(mean_award)) %>%
+  mutate(State = factor(State, unique(State)))
+
+summary(state_award)
+```
+
+```{r}
+state_award %>%
+  drop_na(mean_award) %>%
+  ggplot(aes(x = State, y = mean_award)) +
+  geom_col()
+```
+
+And let's add a mean line. 
+
+```{r}
+state_award %>%
+  drop_na(mean_award) %>%
+  ggplot(aes(x = State, y = mean_award)) +
+  geom_col() +
+  geom_hline(aes(yintercept=mean(state_award$mean_award, na.rm = TRUE)), color = "red") +
+  theme(axis.text.x = element_text(angle = -90))
+```
+
+What if we want to just get a list of States that received on average more than the average across all states?
+
+```{r}
+mean_state <- mean(state_award$mean_award, na.rm = TRUE)
+
+state_award %>%
+  filter(mean_award >= mean_state)
+```
+
+What if we wanted to see whether awards were larger or smaller based on the model?
+
+```{r}
+data %>%
+  group_by(`Model Selected`) %>%
+  summarise(mean_award = mean(`2010/11/Award Amount`, na.rm = TRUE)) %>%
+  arrange(desc(mean_award))
+```
+We can see, and should expect, that when you're just closing the school and redistributing students, you receive less money on average. When you restart the school, or close it and reopen it, you get the largest award on average. 
+
+What if we want to do something a bit more complex, and check to see if this sort of average by model varies across states?
+
+```{r}
+state_model_avgs <- data %>%
+  group_by(State, `Model Selected`) %>%
+  summarise(mean_award = mean(`2010/11/Award Amount`, na.rm = TRUE))
+
+glimpse(state_model_avgs)
+```
+
+```{r}
+state_model_avgs %>%
+  filter(`Model Selected` != "Missing") %>%
+  ggplot(aes(x = State, y = mean_award, fill = `Model Selected`)) +
+  geom_col(position = "dodge", na.rm = TRUE) +
+  theme(axis.text.x = element_text(angle = -90))
+```
+
+Let's look at a single state: CO:
+
+```{r}
+state_model_avgs %>%
+  filter(State == "CO")
+```
+
+Let's find out which type of model in which state on average got the largest award.
+
+```{r}
+state_model_avgs %>%
+  arrange(desc(mean_award))
+```
+
+What if instead of averages, just count the number of each type per state?
+
+```{r}
+state_model_counts <- data %>%
+  group_by(State, `Model Selected`) %>%
+  count()
+
+state_model_counts
+```
+
+With this data we could then look at distributions for particular models across states. 
+
+```{r}
+state_model_counts %>%
+  filter(`Model Selected` == "Turnaround") %>%
+  arrange(desc(n))
+```
+
+We can see that California received the largest number of turnaround grants, with Florida next, though a ways behind them in number. 
+
+
