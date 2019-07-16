@@ -1,7 +1,7 @@
 ---
-title: "intro-to-R"
-author: "Scott"
-date: "7/10/2019"
+title: "IDEALS-GSE R Workshop"
+author: "Scott Bailey"
+date: "7/16/2019"
 output: html_document
 ---
 
@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Doing data analysis with R
+## Data analysis with R
 
 We're going to take a very pragmatic approach in our workshop today. Instead of thinking about R as a programming language we're trying to learn to code in, we're going to approach R as just a program that we can use to do some fundamental data analysis. In that line of thinking, instead of learning a lot of base R, we're going to start using the Tidyverse packages and approach right away. Briefly, Tidyverse is a set of opinionated packages with a coherent approach to how to work with data in R. For many of us, they make R easier to learn and to use.  
 
@@ -148,9 +148,20 @@ ggplot(data, aes(`2010/11/Award Amount`)) +
   geom_vline(aes(xintercept=mean(data$`2010/11/Award Amount`, na.rm = TRUE)), color = "red")
 ```
 
+Before we move on, let's see if we can figure out what's going on with some of those low values. 
+
+```{r}
+data %>% 
+  arrange(`2010/11/Award Amount`)
+```
+
+We can see that some of the grants were for only one or two dollars. We can go back and look at the original csv file to verify that we didn't alter that. To figure out why those grants were so small, or to figure out whether these are erroneous values in the original data, we would have to look into the study a bit more.
+
 We've developed a bit of a sense of how to explore our data, especially with plots. Let's start thinking about what types of questions we might ask our data and how we could find solutions with R. 
 
 What if we wonder whether there is some set of states that might have received more money on average than other states?
+
+This takes a few steps. We need to group all the observations together by state, average their award amounts, then sort the values. If we want to graph the data, which we will, in this descending order, we also have to do something a bit tricky to reorder the states as factors. 
 
 ```{r}
 state_award <- data %>%
@@ -159,7 +170,7 @@ state_award <- data %>%
   arrange(desc(mean_award)) %>%
   mutate(State = factor(State, unique(State)))
 
-summary(state_award)
+head(state_award)
 ```
 
 ```{r}
