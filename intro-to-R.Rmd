@@ -2,12 +2,18 @@
 title: "IDEALS-GSE R Workshop"
 author: "Scott Bailey"
 date: "7/16/2019"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+## Installing R and RStudio
+
+See instructions from one of my excellent colleagues, Claudia Engel: [https://cengel.github.io/R-intro/index.html#setup-instructions](https://cengel.github.io/R-intro/index.html#setup-instructions).
 
 ## Data analysis with R
 
