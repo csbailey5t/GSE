@@ -46,7 +46,7 @@ data$`Model Selected` <- as_factor(data$`Model Selected`)
 glimpse(data)
 ```
 
-We can see that the three variables are now being treated as factors. Changing the type of the amout column is a bit more complicated. We need to remove the dollar sign, then we can change the value to a number. 
+We can see that the three variables are now being treated as factors. Changing the type of the amount column is a bit more complicated. We need to remove the dollar sign, then we can change the value to a number. 
 
 ```{r}
 data$`2010/11/Award Amount` <- as.numeric(gsub("\\$", "", data$`2010/11/Award Amount`))
